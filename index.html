@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wheel Strategy Dashboard Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --green: #059669;
+      --red: #dc2626;
+      --amber: #d97706;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container { max-width: 1480px; margin: 0 auto; padding: 24px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 34px; line-height: 1.1; }
+    .sub { color: var(--muted); margin-top: 8px; }
+    .badge { background: var(--accent-soft); color: #1d4ed8; padding: 10px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+    .warning { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; padding: 14px 16px; border-radius: 14px; margin: 0 0 18px; }
+    .tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+    .tab-btn { border: 1px solid var(--border); background: white; padding: 12px 18px; border-radius: 14px; cursor: pointer; font-weight: 700; }
+    .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .grid-2, .grid-3, .grid-4, .grid-5, .grid-form { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-form { grid-template-columns: repeat(5, 1fr); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-body { padding: 20px; }
+    .card-title { font-size: 18px; font-weight: 800; margin: 0 0 18px 0; }
+    .metric { min-height: 110px; display: flex; flex-direction: column; justify-content: center; }
+    .metric-label { color: var(--muted); font-size: 14px; }
+    .metric-value { font-size: 29px; font-weight: 800; margin-top: 8px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    input, select, textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; background: #fff; }
+    textarea { min-height: 92px; resize: vertical; }
+    button.primary, button.secondary, button.danger, .file-btn {
+      border: none; padding: 12px 16px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px;
+    }
+    button.primary { background: var(--accent); color: white; }
+    button.secondary, .file-btn { background: #e2e8f0; color: #0f172a; }
+    button.danger { background: #fee2e2; color: #991b1b; }
+    .actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+    .chart-wrap { position: relative; height: 320px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 1280px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+    th { color: var(--muted); font-weight: 800; }
+    .positive { color: var(--green); font-weight: 700; }
+    .negative { color: var(--red); font-weight: 700; }
+    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #f1f5f9; font-weight: 700; font-size: 12px; }
+    .pill.open { background: #dbeafe; color: #1d4ed8; }
+    .pill.assigned { background: #fef3c7; color: #92400e; }
+    .pill.closed { background: #dcfce7; color: #166534; }
+    .pill.expired { background: #ede9fe; color: #5b21b6; }
+    .section-stack { display: grid; gap: 18px; }
+    .split { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 18px; }
+    .inline-note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .mini { font-size: 12px; color: var(--muted); }
+    .notes-cell { max-width: 260px; white-space: pre-wrap; color: #334155; }
+    .small-stat .label { color: var(--muted); font-size: 14px; }
+    .small-stat .value { font-size: 28px; font-weight: 800; margin-top: 8px; }
+    .muted { color: var(--muted); }
+    @media (max-width: 1200px) {
+      .grid-5, .grid-4, .grid-form { grid-template-columns: repeat(2, 1fr); }
+      .grid-3, .grid-2, .split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .container { padding: 16px; }
+      .grid-5, .grid-4, .grid-3, .grid-2, .grid-form { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+      .metric-value { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Wheel Strategy Dashboard Pro</h1>
+        <div class="sub">Manual wheel tracker with cycle linking, open positions, APR analytics, assignment stats, expiry calendar, ticker scorecards, risk panel, notes, filters, and backup tools.</div>
+      </div>
+      <div class="badge">Pure Static + localStorage</div>
+    </div>
+
+    <div class="warning"><strong>Data warning:</strong> your data is stored only in this browser. Use <strong>Export Backup</strong> regularly so you do not lose your trade history if browser storage is cleared.</div>
+
+    <div class="grid-5">
+      <div class="card"><div class="card-body metric"><div class="metric-label">Total P&amp;L</div><div class="metric-value" id="metricPnL">$0</div></div></div>
+      <div class="card"><div class="card-body metric"><div class="metric-label">Premium Collected</div><div class="metric-value" id="metricPremium">$0</div></div></div>
+      <div class="card"><div class="card-body metric"><div class="metric-label">Win Rate</div><div class="metric-value" id="metricWinRate">0%</div></div></div>
+      <div class="card"><div class="card-body metric"><div class="metric-label">Capital Tracked</div><div class="metric-value" id="metricCapital">$0</div></div></div>
+      <div class="card"><div class="card-body metric"><div class="metric-label">Avg APR</div><div class="metric-value" id="metricAvgApr">0%</div></div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="analytics">Analytics</button>
+      <button class="tab-btn" data-tab="positions">Open Positions</button>
+      <button class="tab-btn" data-tab="calendar">Expiry Calendar</button>
+      <button class="tab-btn" data-tab="trades">Trade Log</button>
+      <button class="tab-btn" data-tab="settings">Backup &amp; Tools</button>
+    </div>
+
+    <div id="overview" class="tab-content active">
+      <div class="split">
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">Add / Edit Trade</div>
+            <div class="grid-form">
+              <div><label>Date Opened</label><input id="date" type="date"></div>
+              <div><label>Expiry Date</label><input id="expiryDate" type="date"></div>
+              <div><label>Ticker</label><input id="ticker" placeholder="e.g. IBIT"></div>
+              <div><label>Cycle ID</label><input id="cycleId" placeholder="e.g. ASTS-1"></div>
+              <div><label>Trade Type</label><select id="tradeType"><option>Cash-Secured Put</option><option>Covered Call</option><option>Share Sale</option><option>Share Buy</option><option>Roll</option></select></div>
+              <div><label>Strike</label><input id="strike" type="number" step="0.01"></div>
+              <div><label>Underlying Price at Entry</label><input id="underlyingPrice" type="number" step="0.01"></div>
+              <div><label>Premium Collected</label><input id="premium" type="number" step="0.01"></div>
+              <div><label>Capital Used</label><input id="capitalUsed" type="number" step="0.01"></div>
+              <div><label>Result P&amp;L</label><input id="result" type="number" step="0.01"></div>
+              <div><label>Days Held</label><input id="daysHeld" type="number" step="1" placeholder="auto if dates present"></div>
+              <div><label>Status</label><select id="status"><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
+              <div><label>Shares Assigned</label><input id="sharesAssigned" type="number" step="1" value="0"></div>
+              <div><label>Current Shares Held</label><input id="sharesHeld" type="number" step="1" value="0"></div>
+              <div><label>Average Share Cost</label><input id="avgShareCost" type="number" step="0.01"></div>
+            </div>
+            <div style="margin-top:18px;">
+              <label>Notes / Journal</label>
+              <textarea id="notes" placeholder="Why entered, IV level, support/resistance, roll reason, exit reason, management plan..."></textarea>
+            </div>
+            <div class="actions">
+              <button class="secondary" id="clearFormBtn">Clear</button>
+              <button class="primary" id="addTradeBtn">Save Trade</button>
+            </div>
+            <div class="inline-note">Use the same cycle ID for the full wheel sequence so CSP, assignment, covered calls, and share exit stay linked.</div>
+          </div>
+        </div>
+
+        <div class="section-stack">
+          <div class="card"><div class="card-body small-stat"><div class="label">Open Trades</div><div class="value" id="statOpen">0</div></div></div>
+          <div class="card"><div class="card-body small-stat"><div class="label">Winning Trades</div><div class="value" id="statWins">0</div></div></div>
+          <div class="card"><div class="card-body small-stat"><div class="label">Losing Trades</div><div class="value" id="statLosses">0</div></div></div>
+          <div class="card"><div class="card-body small-stat"><div class="label">Assignments</div><div class="value" id="statAssigned">0</div></div></div>
+          <div class="card"><div class="card-body small-stat"><div class="label">Avg Return on Capital</div><div class="value" id="statAvgReturn">0%</div></div></div>
+          <div class="card"><div class="card-body small-stat"><div class="label">Positions Needing Action</div><div class="value" id="statAction">0</div></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:18px;">
+        <div class="card"><div class="card-body"><div class="card-title">Monthly P&amp;L</div><div class="chart-wrap"><canvas id="monthlyChart"></canvas></div></div></div>
+        <div class="card"><div class="card-body"><div class="card-title">Trade Status Mix</div><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div></div>
+      </div>
+
+      <div class="grid-4" style="margin-top:18px;">
+        <div class="card"><div class="card-body small-stat"><div class="label">Assignment Rate</div><div class="value" id="assignmentRate">0%</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Avg Assigned Cost Basis</div><div class="value" id="avgAssignedCostBasis">$0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Avg Days Assignment to Exit</div><div class="value" id="avgAssignRecoveryDays">0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">P&amp;L After Assignment Recovery</div><div class="value" id="assignmentRecoveryPnL">$0</div></div></div>
+      </div>
+    </div>
+
+    <div id="analytics" class="tab-content">
+      <div class="grid-2">
+        <div class="card"><div class="card-body"><div class="card-title">Cumulative Equity Curve</div><div class="chart-wrap"><canvas id="equityChart"></canvas></div></div></div>
+        <div class="card"><div class="card-body"><div class="card-title">P&amp;L by Ticker</div><div class="chart-wrap"><canvas id="tickerChart"></canvas></div></div></div>
+      </div>
+      <div class="grid-2" style="margin-top:18px;">
+        <div class="card"><div class="card-body"><div class="card-title">Cycle P&amp;L</div><div class="chart-wrap"><canvas id="cycleChart"></canvas></div></div></div>
+        <div class="card"><div class="card-body"><div class="card-title">Premium Yield on Capital by Ticker</div><div class="chart-wrap"><canvas id="yieldChart"></canvas></div></div></div>
+      </div>
+      <div class="grid-4" style="margin-top:18px;">
+        <div class="card"><div class="card-body small-stat"><div class="label">Best Outcome Driver</div><div class="value" id="bestTicker">-</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Worst Outcome Driver</div><div class="value" id="worstTicker">-</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Trades Logged</div><div class="value" id="tradeCount">0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Avg Premium / Trade</div><div class="value" id="avgPremium">$0</div></div></div>
+      </div>
+
+      <div class="card" style="margin-top:18px;">
+        <div class="card-body">
+          <div class="card-title">Ticker Scorecards</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Trades</th>
+                  <th>Total Premium</th>
+                  <th>Total P&amp;L</th>
+                  <th>Win Rate</th>
+                  <th>Assignments</th>
+                  <th>Assignment Frequency</th>
+                  <th>Premium Yield</th>
+                  <th>Avg APR</th>
+                </tr>
+              </thead>
+              <tbody id="scorecardBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="positions" class="tab-content">
+      <div class="grid-4">
+        <div class="card"><div class="card-body small-stat"><div class="label">Current Shares Held</div><div class="value" id="posSharesHeld">0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Average Share Cost</div><div class="value" id="posAvgCost">$0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Active Covered Call Strike</div><div class="value" id="posActiveCall">-</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Active Short Put Strike</div><div class="value" id="posActivePut">-</div></div></div>
+      </div>
+
+      <div class="card" style="margin-top:18px;">
+        <div class="card-body">
+          <div class="card-title">Open Position Tracker</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Cycle ID</th>
+                  <th>Shares Held</th>
+                  <th>Avg Share Cost</th>
+                  <th>Active Call Strike</th>
+                  <th>Active Put Strike</th>
+                  <th>Underlying Price</th>
+                  <th>Unrealized P&amp;L</th>
+                  <th>Next Expiry</th>
+                  <th>Days to Expiry</th>
+                  <th>Needs Action</th>
+                </tr>
+              </thead>
+              <tbody id="positionsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-top:18px;">
+        <div class="card"><div class="card-body small-stat"><div class="label">Capital Currently Tied Up</div><div class="value" id="riskCapitalTied">$0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Max Assignment Exposure</div><div class="value" id="riskMaxAssignment">$0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Largest Ticker Concentration</div><div class="value" id="riskLargestConcentration">-</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Cash Reserve Estimate</div><div class="value" id="riskCashReserve">$0</div></div></div>
+      </div>
+    </div>
+
+    <div id="calendar" class="tab-content">
+      <div class="grid-4">
+        <div class="card"><div class="card-body small-stat"><div class="label">Next Expiry</div><div class="value" id="nextExpiry">-</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Calls Expiring This Week</div><div class="value" id="callsThisWeek">0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Puts Expiring This Week</div><div class="value" id="putsThisWeek">0</div></div></div>
+        <div class="card"><div class="card-body small-stat"><div class="label">Roll / Decision Needed</div><div class="value" id="rollNeeded">0</div></div></div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <div class="card-body">
+          <div class="card-title">Upcoming Actions</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Ticker</th>
+                  <th>Cycle ID</th>
+                  <th>Type</th>
+                  <th>Strike</th>
+                  <th>Status</th>
+                  <th>Days Left</th>
+                  <th>Action Flag</th>
+                </tr>
+              </thead>
+              <tbody id="calendarBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="trades" class="tab-content">
+      <div class="card">
+        <div class="card-body">
+          <div class="toolbar">
+            <div>
+              <div class="card-title" style="margin-bottom:6px;">Trade Log</div>
+              <div class="mini">Filters below apply to all analytics and tables.</div>
+            </div>
+            <div class="toolbar-actions">
+              <button class="secondary" id="resetFiltersBtn">Reset Filters</button>
+            </div>
+          </div>
+          <div class="grid-5" style="margin-top:16px;">
+            <div><label>Filter Ticker</label><input id="filterTicker" placeholder="All"></div>
+            <div><label>Filter Cycle ID</label><input id="filterCycle" placeholder="All"></div>
+            <div><label>Filter Type</label><select id="filterType"><option value="">All</option><option>Cash-Secured Put</option><option>Covered Call</option><option>Share Sale</option><option>Share Buy</option><option>Roll</option></select></div>
+            <div><label>Filter Status</label><select id="filterStatus"><option value="">All</option><option>Open</option><option>Closed</option><option>Expired</option><option>Assigned</option></select></div>
+            <div><label>Date Range</label><select id="filterDatePreset"><option value="">All</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select></div>
+          </div>
+          <div class="table-wrap" style="margin-top:18px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Expiry</th>
+                  <th>Ticker</th>
+                  <th>Cycle ID</th>
+                  <th>Type</th>
+                  <th>Strike</th>
+                  <th>Underlying</th>
+                  <th>Premium</th>
+                  <th>Capital</th>
+                  <th>Result</th>
+                  <th>Days Held</th>
+                  <th>APR</th>
+                  <th>Status</th>
+                  <th>Assigned</th>
+                  <th>Shares Held</th>
+                  <th>Avg Cost</th>
+                  <th>Notes</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="tradeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings" class="tab-content">
+      <div class="grid-3">
+        <div class="card"><div class="card-body"><div class="card-title">Backup</div><div class="inline-note">Export your full database as JSON or CSV.</div><div class="actions" style="justify-content:flex-start;margin-top:18px;"><button class="primary" id="exportJsonBtn">Export Backup JSON</button><button class="secondary" id="exportCsvBtn">Export CSV</button></div></div></div>
+        <div class="card"><div class="card-body"><div class="card-title">Restore</div><div class="inline-note">Import a previously exported JSON backup file.</div><div class="actions" style="justify-content:flex-start;margin-top:18px;"><label class="file-btn" for="importJsonInput">Import Backup JSON</label><input type="file" id="importJsonInput" accept="application/json" style="display:none"></div></div></div>
+        <div class="card"><div class="card-body"><div class="card-title">Reset</div><div class="inline-note">Delete all stored data from this browser.</div><div class="actions" style="justify-content:flex-start;margin-top:18px;"><button class="danger" id="resetDataBtn">Reset All Data</button></div></div></div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <div class="card-body">
+          <div class="card-title">How the added features work</div>
+          <div class="mini" style="line-height:1.8;font-size:14px; color:#334155;">
+            • <strong>Cycle ID</strong> links trades into one wheel lifecycle.<br>
+            • <strong>Open Positions</strong> summarizes current stock and short option exposure by ticker/cycle.<br>
+            • <strong>APR</strong> uses result ÷ capital × (365 ÷ days held).<br>
+            • <strong>Assignment analytics</strong> estimates how often assignment happens and how recovered cycles perform.<br>
+            • <strong>Expiry Calendar</strong> flags open positions expiring within 7 days.<br>
+            • <strong>Ticker scorecards</strong> show which underlyings are actually productive.<br>
+            • <strong>Risk dashboard</strong> estimates tied-up capital and assignment exposure from open trades.<br>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'wheel_strategy_trades_pro_v2';
+    const TODAY = new Date().toISOString().slice(0,10);
+    const starterTrades = [
+      { id: 1, date: '2026-03-01', expiryDate: '2026-03-14', ticker: 'IBIT', cycleId: 'IBIT-1', tradeType: 'Cash-Secured Put', strike: 48, underlyingPrice: 49.2, premium: 145, capitalUsed: 4800, result: 145, daysHeld: 13, status: 'Expired', sharesAssigned: 0, sharesHeld: 0, avgShareCost: 0, notes: 'Premium capture, no assignment.' },
+      { id: 2, date: '2026-03-08', expiryDate: '2026-03-21', ticker: 'SOXL', cycleId: 'SOXL-1', tradeType: 'Covered Call', strike: 38, underlyingPrice: 36.8, premium: 92, capitalUsed: 3200, result: 60, daysHeld: 13, status: 'Closed', sharesAssigned: 0, sharesHeld: 100, avgShareCost: 32, notes: 'Trimmed upside into resistance.' },
+      { id: 3, date: '2026-03-14', expiryDate: '2026-03-28', ticker: 'ASTS', cycleId: 'ASTS-1', tradeType: 'Cash-Secured Put', strike: 30, underlyingPrice: 31.4, premium: 120, capitalUsed: 3000, result: -210, daysHeld: 14, status: 'Assigned', sharesAssigned: 100, sharesHeld: 100, avgShareCost: 28.8, notes: 'Accepted assignment, plan to sell call after bounce.' },
+      { id: 4, date: '2026-03-20', expiryDate: '2026-03-27', ticker: 'ASTS', cycleId: 'ASTS-1', tradeType: 'Covered Call', strike: 34, underlyingPrice: 29.7, premium: 88, capitalUsed: 3000, result: 88, daysHeld: 7, status: 'Open', sharesAssigned: 0, sharesHeld: 100, avgShareCost: 28.8, notes: 'Recovery call against assigned shares.' }
+    ];
+
+    let charts = {};
+    let editingId = null;
+    let trades = loadTrades();
+
+    function loadTrades() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return starterTrades;
+      try { return JSON.parse(raw); } catch { return starterTrades; }
+    }
+    function saveTrades() { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); }
+    function fmtNum(v) { return Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }); }
+    function fmtCurrency(v) { return '$' + fmtNum(v); }
+    function fmtPct(v) { return fmtNum(v) + '%'; }
+    function daysBetween(a, b) {
+      if (!a || !b) return 0;
+      const ms = new Date(b) - new Date(a);
+      return Math.max(1, Math.round(ms / 86400000));
+    }
+    function daysTo(date) {
+      if (!date) return null;
+      return Math.ceil((new Date(date) - new Date(TODAY)) / 86400000);
+    }
+    function tradeApr(t) {
+      const daysHeld = Number(t.daysHeld || 0) || (t.date && t.expiryDate ? daysBetween(t.date, t.expiryDate) : 0);
+      if (!daysHeld || !Number(t.capitalUsed)) return 0;
+      return (Number(t.result || 0) / Number(t.capitalUsed || 0)) * (365 / daysHeld) * 100;
+    }
+    function premiumYield(t) {
+      if (!Number(t.capitalUsed)) return 0;
+      return (Number(t.premium || 0) / Number(t.capitalUsed || 0)) * 100;
+    }
+    function getFilters() {
+      return {
+        ticker: document.getElementById('filterTicker')?.value?.trim().toUpperCase() || '',
+        cycle: document.getElementById('filterCycle')?.value?.trim().toUpperCase() || '',
+        type: document.getElementById('filterType')?.value || '',
+        status: document.getElementById('filterStatus')?.value || '',
+        preset: document.getElementById('filterDatePreset')?.value || ''
+      };
+    }
+    function applyFilters(data) {
+      const f = getFilters();
+      return data.filter(t => {
+        if (f.ticker && !String(t.ticker || '').toUpperCase().includes(f.ticker)) return false;
+        if (f.cycle && !String(t.cycleId || '').toUpperCase().includes(f.cycle)) return false;
+        if (f.type && t.tradeType !== f.type) return false;
+        if (f.status && t.status !== f.status) return false;
+        if (f.preset) {
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - Number(f.preset));
+          if (new Date(t.date) < cutoff) return false;
+        }
+        return true;
+      });
+    }
+    function filteredTrades() { return applyFilters(trades); }
+
+    function calcMetrics(data) {
+      const totalPremium = data.reduce((s, t) => s + Number(t.premium || 0), 0);
+      const totalPnL = data.reduce((s, t) => s + Number(t.result || 0), 0);
+      const totalCapital = data.reduce((s, t) => s + Number(t.capitalUsed || 0), 0);
+      const closedTrades = data.filter(t => t.status !== 'Open');
+      const wins = closedTrades.filter(t => Number(t.result) > 0).length;
+      const losses = closedTrades.filter(t => Number(t.result) < 0).length;
+      const assigned = data.filter(t => t.status === 'Assigned').length;
+      const openTrades = data.filter(t => t.status === 'Open').length;
+      const winRate = closedTrades.length ? (wins / closedTrades.length) * 100 : 0;
+      const avgReturn = totalCapital > 0 ? (totalPnL / totalCapital) * 100 : 0;
+      const aprValues = data.map(tradeApr).filter(v => isFinite(v));
+      const avgApr = aprValues.length ? aprValues.reduce((a,b)=>a+b,0) / aprValues.length : 0;
+      return { totalPremium, totalPnL, totalCapital, wins, losses, assigned, openTrades, winRate, avgReturn, avgApr };
+    }
+    function groupMonthly(data) {
+      const grouped = {};
+      [...data].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(t => {
+        const key = String(t.date || '').slice(0,7);
+        if (!grouped[key]) grouped[key] = { label: key, value: 0 };
+        grouped[key].value += Number(t.result || 0);
+      });
+      return Object.values(grouped);
+    }
+    function groupStatus(data) {
+      const counts = {};
+      data.forEach(t => counts[t.status] = (counts[t.status] || 0) + 1);
+      return Object.entries(counts).map(([label, value]) => ({ label, value }));
+    }
+    function groupTicker(data) {
+      const grouped = {};
+      data.forEach(t => {
+        if (!grouped[t.ticker]) grouped[t.ticker] = { ticker: t.ticker, pnl: 0, premium: 0, capital: 0, aprs: [], trades: 0, assignments: 0, wins: 0, closed: 0 };
+        const g = grouped[t.ticker];
+        g.pnl += Number(t.result || 0);
+        g.premium += Number(t.premium || 0);
+        g.capital += Number(t.capitalUsed || 0);
+        g.aprs.push(tradeApr(t));
+        g.trades += 1;
+        if (t.status === 'Assigned') g.assignments += 1;
+        if (t.status !== 'Open') {
+          g.closed += 1;
+          if (Number(t.result) > 0) g.wins += 1;
+        }
+      });
+      return Object.values(grouped).map(g => ({
+        ...g,
+        winRate: g.closed ? (g.wins / g.closed) * 100 : 0,
+        assignmentFrequency: g.trades ? (g.assignments / g.trades) * 100 : 0,
+        premiumYield: g.capital ? (g.premium / g.capital) * 100 : 0,
+        avgApr: g.aprs.length ? g.aprs.reduce((a,b)=>a+b,0)/g.aprs.length : 0
+      }));
+    }
+    function groupCycles(data) {
+      const grouped = {};
+      data.forEach(t => {
+        const key = t.cycleId || 'UNCATEGORIZED';
+        if (!grouped[key]) grouped[key] = { cycleId: key, pnl: 0, trades: 0, assigned: false, start: t.date, end: t.date };
+        const g = grouped[key];
+        g.pnl += Number(t.result || 0);
+        g.trades += 1;
+        g.assigned = g.assigned || t.status === 'Assigned';
+        if (t.date < g.start) g.start = t.date;
+        if (t.date > g.end) g.end = t.date;
+      });
+      return Object.values(grouped);
+    }
+    function cumulativeSeries(data) {
+      let running = 0;
+      return [...data].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(t => {
+        running += Number(t.result || 0);
+        return { label: t.date, value: running };
+      });
+    }
+    function openPositions(data) {
+      const map = {};
+      data.filter(t => t.status === 'Open' || t.status === 'Assigned').forEach(t => {
+        const key = (t.ticker || '') + '|' + (t.cycleId || '');
+        if (!map[key]) map[key] = { ticker: t.ticker, cycleId: t.cycleId || '-', sharesHeld: 0, avgShareCost: 0, activeCallStrike: null, activePutStrike: null, underlyingPrice: 0, nextExpiry: null, needsAction: 'No', unrealizedPnL: 0 };
+        const p = map[key];
+        p.sharesHeld = Math.max(p.sharesHeld, Number(t.sharesHeld || 0), Number(t.sharesAssigned || 0));
+        p.avgShareCost = Number(t.avgShareCost || p.avgShareCost || 0);
+        p.underlyingPrice = Number(t.underlyingPrice || p.underlyingPrice || 0);
+        if (t.tradeType === 'Covered Call' && t.status === 'Open') p.activeCallStrike = t.strike;
+        if (t.tradeType === 'Cash-Secured Put' && t.status === 'Open') p.activePutStrike = t.strike;
+        if (!p.nextExpiry || (t.expiryDate && t.expiryDate < p.nextExpiry)) p.nextExpiry = t.expiryDate || p.nextExpiry;
+      });
+      Object.values(map).forEach(p => {
+        p.unrealizedPnL = p.sharesHeld && p.underlyingPrice && p.avgShareCost ? (p.underlyingPrice - p.avgShareCost) * p.sharesHeld : 0;
+        const dte = daysTo(p.nextExpiry);
+        p.daysToExpiry = dte;
+        p.needsAction = dte !== null && dte <= 7 ? 'Yes' : 'No';
+      });
+      return Object.values(map);
+    }
+    function upcomingActions(data) {
+      return [...data]
+        .filter(t => t.status === 'Open' && t.expiryDate)
+        .map(t => ({ ...t, dte: daysTo(t.expiryDate), actionFlag: daysTo(t.expiryDate) <= 7 ? 'Review / Roll' : 'Monitor' }))
+        .sort((a,b)=>(a.dte ?? 9999) - (b.dte ?? 9999));
+    }
+    function assignmentAnalytics(data) {
+      const assignedTrades = data.filter(t => t.status === 'Assigned');
+      const cycles = groupCycles(data);
+      const assignedCycles = cycles.filter(c => c.assigned);
+      const totalTrades = data.length;
+      const assignmentRate = totalTrades ? (assignedTrades.length / totalTrades) * 100 : 0;
+      const avgAssignedCostBasis = assignedTrades.length ? assignedTrades.reduce((s,t)=>s+Number(t.avgShareCost || 0),0) / assignedTrades.length : 0;
+      const recoveryPnL = assignedCycles.reduce((s,c)=>s+Number(c.pnl || 0), 0);
+      const recoveryDays = assignedCycles.map(c => daysBetween(c.start, c.end)).filter(Boolean);
+      const avgAssignRecoveryDays = recoveryDays.length ? recoveryDays.reduce((a,b)=>a+b,0) / recoveryDays.length : 0;
+      return { assignmentRate, avgAssignedCostBasis, recoveryPnL, avgAssignRecoveryDays };
+    }
+    function riskStats(data) {
+      const open = data.filter(t => t.status === 'Open');
+      const capitalTied = open.reduce((s,t)=>s+Number(t.capitalUsed || 0), 0);
+      const maxAssignmentExposure = open.filter(t => t.tradeType === 'Cash-Secured Put').reduce((s,t)=>s+Number(t.strike || 0) * Math.max(100, Number(t.sharesAssigned || 100)), 0);
+      const byTicker = {};
+      open.forEach(t => byTicker[t.ticker] = (byTicker[t.ticker] || 0) + Number(t.capitalUsed || 0));
+      const sorted = Object.entries(byTicker).sort((a,b)=>b[1]-a[1]);
+      const largest = sorted[0] ? `${sorted[0][0]} (${fmtCurrency(sorted[0][1])})` : '-';
+      const cashReserve = maxAssignmentExposure * 0.2;
+      return { capitalTied, maxAssignmentExposure, largest, cashReserve };
+    }
+
+    function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
+
+    function renderMetrics() {
+      const data = filteredTrades();
+      const m = calcMetrics(data);
+      setText('metricPnL', fmtCurrency(m.totalPnL));
+      setText('metricPremium', fmtCurrency(m.totalPremium));
+      setText('metricWinRate', fmtPct(m.winRate));
+      setText('metricCapital', fmtCurrency(m.totalCapital));
+      setText('metricAvgApr', fmtPct(m.avgApr));
+      setText('statOpen', m.openTrades);
+      setText('statWins', m.wins);
+      setText('statLosses', m.losses);
+      setText('statAssigned', m.assigned);
+      setText('statAvgReturn', fmtPct(m.avgReturn));
+
+      const actions = upcomingActions(data).filter(x => x.dte <= 7).length;
+      setText('statAction', actions);
+
+      const assign = assignmentAnalytics(data);
+      setText('assignmentRate', fmtPct(assign.assignmentRate));
+      setText('avgAssignedCostBasis', fmtCurrency(assign.avgAssignedCostBasis));
+      setText('avgAssignRecoveryDays', fmtNum(assign.avgAssignRecoveryDays));
+      setText('assignmentRecoveryPnL', fmtCurrency(assign.recoveryPnL));
+
+      const tickerData = groupTicker(data).sort((a,b)=>b.pnl-a.pnl);
+      setText('bestTicker', tickerData[0]?.ticker || '-');
+      setText('worstTicker', tickerData[tickerData.length - 1]?.ticker || '-');
+      setText('tradeCount', data.length);
+      setText('avgPremium', fmtCurrency(data.length ? m.totalPremium / data.length : 0));
+
+      const positions = openPositions(data);
+      const totalShares = positions.reduce((s,p)=>s+Number(p.sharesHeld || 0), 0);
+      const weightedCostDen = positions.reduce((s,p)=>s+Number(p.sharesHeld || 0), 0);
+      const weightedCostNum = positions.reduce((s,p)=>s+Number(p.avgShareCost || 0) * Number(p.sharesHeld || 0), 0);
+      const avgCost = weightedCostDen ? weightedCostNum / weightedCostDen : 0;
+      const activeCall = positions.find(p => p.activeCallStrike)?.activeCallStrike;
+      const activePut = positions.find(p => p.activePutStrike)?.activePutStrike;
+      setText('posSharesHeld', fmtNum(totalShares));
+      setText('posAvgCost', fmtCurrency(avgCost));
+      setText('posActiveCall', activeCall ? fmtCurrency(activeCall) : '-');
+      setText('posActivePut', activePut ? fmtCurrency(activePut) : '-');
+
+      const risk = riskStats(data);
+      setText('riskCapitalTied', fmtCurrency(risk.capitalTied));
+      setText('riskMaxAssignment', fmtCurrency(risk.maxAssignmentExposure));
+      setText('riskLargestConcentration', risk.largest);
+      setText('riskCashReserve', fmtCurrency(risk.cashReserve));
+
+      const upcoming = upcomingActions(data);
+      setText('nextExpiry', upcoming[0]?.expiryDate || '-');
+      setText('callsThisWeek', upcoming.filter(t => t.tradeType === 'Covered Call' && t.dte <= 7).length);
+      setText('putsThisWeek', upcoming.filter(t => t.tradeType === 'Cash-Secured Put' && t.dte <= 7).length);
+      setText('rollNeeded', upcoming.filter(t => t.dte <= 7).length);
+    }
+
+    function renderTradeTable() {
+      const body = document.getElementById('tradeTableBody');
+      const data = [...filteredTrades()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+      body.innerHTML = '';
+      data.forEach(t => {
+        const statusClass = String(t.status || '').toLowerCase();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.date || ''}</td>
+          <td>${t.expiryDate || ''}</td>
+          <td><strong>${t.ticker || ''}</strong></td>
+          <td>${t.cycleId || ''}</td>
+          <td>${t.tradeType || ''}</td>
+          <td>${t.strike ? fmtCurrency(t.strike) : '-'}</td>
+          <td>${t.underlyingPrice ? fmtCurrency(t.underlyingPrice) : '-'}</td>
+          <td>${fmtCurrency(t.premium)}</td>
+          <td>${fmtCurrency(t.capitalUsed)}</td>
+          <td class="${Number(t.result) >= 0 ? 'positive' : 'negative'}">${fmtCurrency(t.result)}</td>
+          <td>${fmtNum(t.daysHeld || (t.date && t.expiryDate ? daysBetween(t.date, t.expiryDate) : 0))}</td>
+          <td>${fmtPct(tradeApr(t))}</td>
+          <td><span class="pill ${statusClass}">${t.status}</span></td>
+          <td>${fmtNum(t.sharesAssigned || 0)}</td>
+          <td>${fmtNum(t.sharesHeld || 0)}</td>
+          <td>${t.avgShareCost ? fmtCurrency(t.avgShareCost) : '-'}</td>
+          <td class="notes-cell">${(t.notes || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+          <td>
+            <button class="secondary" onclick="editTrade(${t.id})">Edit</button>
+            <button class="danger" onclick="deleteTrade(${t.id})">Delete</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function renderPositionsTable() {
+      const body = document.getElementById('positionsBody');
+      const data = openPositions(filteredTrades());
+      body.innerHTML = '';
+      data.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.ticker}</strong></td>
+          <td>${p.cycleId}</td>
+          <td>${fmtNum(p.sharesHeld)}</td>
+          <td>${p.avgShareCost ? fmtCurrency(p.avgShareCost) : '-'}</td>
+          <td>${p.activeCallStrike ? fmtCurrency(p.activeCallStrike) : '-'}</td>
+          <td>${p.activePutStrike ? fmtCurrency(p.activePutStrike) : '-'}</td>
+          <td>${p.underlyingPrice ? fmtCurrency(p.underlyingPrice) : '-'}</td>
+          <td class="${p.unrealizedPnL >= 0 ? 'positive' : 'negative'}">${fmtCurrency(p.unrealizedPnL)}</td>
+          <td>${p.nextExpiry || '-'}</td>
+          <td>${p.daysToExpiry ?? '-'}</td>
+          <td>${p.needsAction}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function renderCalendarTable() {
+      const body = document.getElementById('calendarBody');
+      const data = upcomingActions(filteredTrades());
+      body.innerHTML = '';
+      data.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.expiryDate || ''}</td>
+          <td><strong>${t.ticker}</strong></td>
+          <td>${t.cycleId || ''}</td>
+          <td>${t.tradeType}</td>
+          <td>${t.strike ? fmtCurrency(t.strike) : '-'}</td>
+          <td>${t.status}</td>
+          <td>${t.dte ?? '-'}</td>
+          <td>${t.actionFlag}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function renderScorecards() {
+      const body = document.getElementById('scorecardBody');
+      const data = groupTicker(filteredTrades()).sort((a,b)=>b.pnl-a.pnl);
+      body.innerHTML = '';
+      data.forEach(g => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${g.ticker}</strong></td>
+          <td>${g.trades}</td>
+          <td>${fmtCurrency(g.premium)}</td>
+          <td class="${g.pnl >= 0 ? 'positive' : 'negative'}">${fmtCurrency(g.pnl)}</td>
+          <td>${fmtPct(g.winRate)}</td>
+          <td>${g.assignments}</td>
+          <td>${fmtPct(g.assignmentFrequency)}</td>
+          <td>${fmtPct(g.premiumYield)}</td>
+          <td>${fmtPct(g.avgApr)}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function destroyCharts() {
+      Object.values(charts).forEach(chart => chart && chart.destroy());
+      charts = {};
+    }
+    function makeChart(id, type, labels, values, label) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      return new Chart(el, { type, data: { labels, datasets: [{ label, data: values, borderWidth: 1, tension: 0.25 }] }, options: { responsive: true, maintainAspectRatio: false } });
+    }
+    function renderCharts() {
+      destroyCharts();
+      const data = filteredTrades();
+      const monthly = groupMonthly(data);
+      const status = groupStatus(data);
+      const equity = cumulativeSeries(data);
+      const ticker = groupTicker(data);
+      const cycles = groupCycles(data);
+      charts.monthly = makeChart('monthlyChart', 'bar', monthly.map(x=>x.label), monthly.map(x=>x.value), 'Monthly P&L');
+      charts.status = makeChart('statusChart', 'pie', status.map(x=>x.label), status.map(x=>x.value), 'Status Mix');
+      charts.equity = makeChart('equityChart', 'line', equity.map(x=>x.label), equity.map(x=>x.value), 'Cumulative P&L');
+      charts.ticker = makeChart('tickerChart', 'bar', ticker.map(x=>x.ticker), ticker.map(x=>x.pnl), 'P&L by Ticker');
+      charts.cycle = makeChart('cycleChart', 'bar', cycles.map(x=>x.cycleId), cycles.map(x=>x.pnl), 'Cycle P&L');
+      charts.yield = makeChart('yieldChart', 'bar', ticker.map(x=>x.ticker), ticker.map(x=>x.premiumYield), 'Premium Yield %');
+    }
+
+    function renderAll() {
+      saveTrades();
+      renderMetrics();
+      renderTradeTable();
+      renderPositionsTable();
+      renderCalendarTable();
+      renderScorecards();
+      renderCharts();
+    }
+
+    function clearForm() {
+      editingId = null;
+      ['date','expiryDate','ticker','cycleId','strike','underlyingPrice','premium','capitalUsed','result','daysHeld','avgShareCost'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('tradeType').value = 'Cash-Secured Put';
+      document.getElementById('status').value = 'Open';
+      document.getElementById('sharesAssigned').value = '0';
+      document.getElementById('sharesHeld').value = '0';
+      document.getElementById('notes').value = '';
+      document.getElementById('addTradeBtn').textContent = 'Save Trade';
+    }
+
+    function readForm() {
+      const date = document.getElementById('date').value;
+      const expiryDate = document.getElementById('expiryDate').value;
+      const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+      const cycleId = document.getElementById('cycleId').value.trim().toUpperCase();
+      const tradeType = document.getElementById('tradeType').value;
+      const strike = Number(document.getElementById('strike').value || 0);
+      const underlyingPrice = Number(document.getElementById('underlyingPrice').value || 0);
+      const premium = Number(document.getElementById('premium').value || 0);
+      const capitalUsed = Number(document.getElementById('capitalUsed').value || 0);
+      const result = Number(document.getElementById('result').value || 0);
+      const daysHeldInput = Number(document.getElementById('daysHeld').value || 0);
+      const status = document.getElementById('status').value;
+      const sharesAssigned = Number(document.getElementById('sharesAssigned').value || 0);
+      const sharesHeld = Number(document.getElementById('sharesHeld').value || 0);
+      const avgShareCost = Number(document.getElementById('avgShareCost').value || 0);
+      const notes = document.getElementById('notes').value.trim();
+      const daysHeld = daysHeldInput || (date && expiryDate ? daysBetween(date, expiryDate) : 0);
+      return { date, expiryDate, ticker, cycleId, tradeType, strike, underlyingPrice, premium, capitalUsed, result, daysHeld, status, sharesAssigned, sharesHeld, avgShareCost, notes };
+    }
+
+    function validateTrade(t) {
+      return t.date && t.ticker && t.tradeType && t.capitalUsed >= 0;
+    }
+
+    function saveTradeFromForm() {
+      const t = readForm();
+      if (!validateTrade(t)) { alert('Please fill at least Date, Ticker, Trade Type, and Capital Used.'); return; }
+      if (editingId) {
+        trades = trades.map(x => x.id === editingId ? { ...x, ...t } : x);
+      } else {
+        trades.unshift({ id: Date.now(), ...t });
+      }
+      clearForm();
+      renderAll();
+    }
+
+    function editTrade(id) {
+      const t = trades.find(x => x.id === id);
+      if (!t) return;
+      editingId = id;
+      document.getElementById('date').value = t.date || '';
+      document.getElementById('expiryDate').value = t.expiryDate || '';
+      document.getElementById('ticker').value = t.ticker || '';
+      document.getElementById('cycleId').value = t.cycleId || '';
+      document.getElementById('tradeType').value = t.tradeType || 'Cash-Secured Put';
+      document.getElementById('strike').value = t.strike || '';
+      document.getElementById('underlyingPrice').value = t.underlyingPrice || '';
+      document.getElementById('premium').value = t.premium || '';
+      document.getElementById('capitalUsed').value = t.capitalUsed || '';
+      document.getElementById('result').value = t.result || '';
+      document.getElementById('daysHeld').value = t.daysHeld || '';
+      document.getElementById('status').value = t.status || 'Open';
+      document.getElementById('sharesAssigned').value = t.sharesAssigned || 0;
+      document.getElementById('sharesHeld').value = t.sharesHeld || 0;
+      document.getElementById('avgShareCost').value = t.avgShareCost || '';
+      document.getElementById('notes').value = t.notes || '';
+      document.getElementById('addTradeBtn').textContent = 'Update Trade';
+      document.querySelector('[data-tab="overview"]').click();
+    }
+    function deleteTrade(id) {
+      if (!confirm('Delete this trade?')) return;
+      trades = trades.filter(x => x.id !== id);
+      if (editingId === id) clearForm();
+      renderAll();
+    }
+    window.editTrade = editTrade;
+    window.deleteTrade = deleteTrade;
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, 'wheel-strategy-backup.json');
+    }
+    function exportCsv() {
+      const headers = ['id','date','expiryDate','ticker','cycleId','tradeType','strike','underlyingPrice','premium','capitalUsed','result','daysHeld','status','sharesAssigned','sharesHeld','avgShareCost','notes'];
+      const rows = trades.map(t => headers.map(h => csvEscape(t[h] ?? '')));
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      downloadBlob(new Blob([csv], { type: 'text/csv' }), 'wheel-strategy-trades.csv');
+    }
+    function csvEscape(value) {
+      const s = String(value).replace(/"/g, '""');
+      return '"' + s + '"';
+    }
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+    function importJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed)) throw new Error('Invalid file format');
+          trades = parsed;
+          clearForm();
+          renderAll();
+          alert('Backup imported.');
+        } catch (err) {
+          alert('Could not import backup JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+    function resetAllData() {
+      if (!confirm('Delete all saved trades from this browser?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      trades = JSON.parse(JSON.stringify(starterTrades));
+      clearForm();
+      renderAll();
+    }
+    function resetFilters() {
+      ['filterTicker','filterCycle'].forEach(id => document.getElementById(id).value = '');
+      ['filterType','filterStatus','filterDatePreset'].forEach(id => document.getElementById(id).value = '');
+      renderAll();
+    }
+
+    document.getElementById('addTradeBtn').addEventListener('click', saveTradeFromForm);
+    document.getElementById('clearFormBtn').addEventListener('click', clearForm);
+    document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+    document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+    document.getElementById('resetDataBtn').addEventListener('click', resetAllData);
+    document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+    document.getElementById('importJsonInput').addEventListener('change', e => { if (e.target.files[0]) importJsonFile(e.target.files[0]); e.target.value = ''; });
+    ['filterTicker','filterCycle','filterType','filterStatus','filterDatePreset'].forEach(id => document.getElementById(id).addEventListener('input', renderAll));
+    ['filterType','filterStatus','filterDatePreset'].forEach(id => document.getElementById(id).addEventListener('change', renderAll));
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
